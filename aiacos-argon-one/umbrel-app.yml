@@ -4,7 +4,7 @@ storage:
   dataRoot: data
 category: automation
 name: Argon ONE
-version: "1.0.2"
+version: "1.0.3"
 tagline: Fan curve and power button for the Argon ONE case on Raspberry Pi 5
 icon: https://download.argon40.com/ar1config.png
 description: >-
