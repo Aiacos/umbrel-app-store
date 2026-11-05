@@ -1,0 +1,25 @@
+#!/bin/bash
+# Argon's own menu. IR, UPS and BLSTR DAC need packages and boot settings umbrelOS does not keep.
+A=/etc/argon
+[ -f "$A/argononed.py" ] || { echo "Argon scripts are not installed yet, open the app page first."; exit 1; }
+echo "--------------------------"
+echo "Argon Configuration Tool"
+$A/argon-versioninfo.sh simple
+echo "--------------------------"
+while :; do
+  echo
+  echo "Choose Option:"
+  echo "  1. Configure Fan"
+  echo "  2. Configure Units"
+  echo "  3. System Information"
+  echo
+  echo "  0. Exit"
+  echo -n "Enter Number (0-3):"
+  read -r choice || break
+  case "$choice" in
+    1) $A/argonone-fanconfig.sh ;;
+    2) $A/argon-unitconfig.sh ;;
+    3) $A/argon-status.sh ;;
+    0) echo "Thank you."; break ;;
+  esac
+done

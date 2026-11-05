@@ -1,0 +1,3 @@
+#!/bin/sh
+# Argon's scripts call sudo; the daemon container already runs as root.
+exec "$@"
