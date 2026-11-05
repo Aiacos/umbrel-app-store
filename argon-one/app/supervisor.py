@@ -19,8 +19,10 @@ HOOK_SOURCE = "/app/shutdown_hook.py"
 HOOK_TARGET = "/host-shutdown/argon-shutdown.py"
 HEALTH_DELAY = 8
 KEEP_BACKUPS = 5
+STARTUP_GRACE = 6
 
 child = None
+child_started = 0
 hook_installed = False
 running = True
 
@@ -74,9 +76,10 @@ def install_hook():
 
 
 def start_daemon():
-    global child
+    global child, child_started
     if installed() and case_present():
         install_hook()
+        child_started = time.time()
         child = subprocess.Popen([sys.executable, "-u", "/etc/argon/argononed.py", "SERVICE"], cwd="/")
 
 
@@ -142,6 +145,9 @@ def latest_backup():
 
 def write_status():
     problem, duty = health() if installed() else ("not-installed", None)
+    # The daemon needs a moment to start its threads, which is not a failure.
+    if problem == "daemon" and child is not None and child.poll() is None and time.time() - child_started < STARTUP_GRACE:
+        problem = None
     backup = latest_backup()
     write_json(STATUS_FILE, {
         "time": now(),
