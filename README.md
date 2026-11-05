@@ -11,7 +11,7 @@ Fan curve, power button and system information for the Argon ONE case on a Raspb
 page in the Umbrel web UI. umbrelOS resets its system partition at every boot, so Argon's normal
 `argon1.sh` install disappears after a restart; this app keeps it working as a regular Umbrel app.
 
-Not affiliated with Argon 40. The image contains none of Argon's code: at first start the app
+Not affiliated with Argon 40. The icon is loaded from Argon's own server, and the image contains none of Argon's code: at first start the app
 downloads the official scripts from `download.argon40.com`, keeps them in the app's data folder
 and only replaces them when you press **Install update**.
 
