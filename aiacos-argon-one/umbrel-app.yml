@@ -4,7 +4,7 @@ storage:
   dataRoot: data
 category: automation
 name: Argon ONE
-version: "1.0.1"
+version: "1.0.2"
 tagline: Fan curve and power button for the Argon ONE case on Raspberry Pi 5
 icon: https://download.argon40.com/ar1config.png
 description: >-
@@ -24,7 +24,7 @@ description: >-
   The fan and button service has no network, but it has access to I2C, GPIO and the system D-Bus
   to reboot or shut down. That is broad access to your Umbrel: install this app only if you accept
   it.
-releaseNotes: "Uses the official Argon ONE icon."
+releaseNotes: "Starts only when the Argon ONE case answers, and says so on other boards."
 
 developer: Aiacos
 website: https://github.com/Aiacos/umbrel-app-store
