@@ -7,7 +7,7 @@ services:
       APP_PORT: 8080
 
   web:
-    image: ghcr.io/aiacos/argon-one:1.0.3@sha256:c01f2f9b08fb02827e28fbd1885580fd1ede1fda6e66620210afeba2f19b202a
+    image: ghcr.io/aiacos/argon-one:1.0.4@sha256:2c3f0532e611c632d6f5f0917ebf3e9969074a2b8d021e6505c245025fbbd4a7
     restart: on-failure
     command: ["python3", "-u", "/app/web.py"]
     user: "1000:1000"
@@ -22,7 +22,7 @@ services:
       - ${APP_DATA_DIR}/data/argon:/data/argon:ro
 
   daemon:
-    image: ghcr.io/aiacos/argon-one:1.0.3@sha256:c01f2f9b08fb02827e28fbd1885580fd1ede1fda6e66620210afeba2f19b202a
+    image: ghcr.io/aiacos/argon-one:1.0.4@sha256:2c3f0532e611c632d6f5f0917ebf3e9969074a2b8d021e6505c245025fbbd4a7
     restart: on-failure
     command: ["python3", "-u", "/app/supervisor.py"]
     network_mode: none
