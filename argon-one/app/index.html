@@ -99,6 +99,7 @@ const T = {
     summaryOff: (t, s) => `${t}. The fan is off and starts at ${s}.`,
     summaryOn: (t, d) => `${t}. The fan is running at ${d}%.`,
     summaryWait: "Waiting for the fan service.",
+    summaryNoCase: t => `${t}. No Argon ONE case found.`,
     fan: "Fan curve", fanHelp: "Drag a point on the curve or type the values. Each speed applies from its temperature upwards; below the lowest one the fan is off.",
     temp: "From", speed: "Speed (%)", remove: "Remove", add: "Add point", always: "Keep always on", defaults: "Restore Argon defaults", save: "Save curve", saved: "Saved and applied.",
     pointsBad: "Use different temperatures, from 0 to 100 °C, and speeds from 30 to 100%.", units: "Temperature unit",
@@ -115,6 +116,7 @@ const T = {
     summaryOff: (t, s) => `${t}. La ventola è ferma e parte a ${s}.`,
     summaryOn: (t, d) => `${t}. La ventola gira al ${d}%.`,
     summaryWait: "In attesa del servizio della ventola.",
+    summaryNoCase: t => `${t}. Nessun case Argon ONE trovato.`,
     fan: "Curva della ventola", fanHelp: "Trascina un punto sulla curva o scrivi i valori. Ogni velocità vale da quella temperatura in su; sotto la più bassa la ventola è ferma.",
     temp: "Da", speed: "Velocità (%)", remove: "Rimuovi", add: "Aggiungi punto", always: "Tieni sempre accesa", defaults: "Ripristina i valori Argon", save: "Salva la curva", saved: "Salvata e applicata.",
     pointsBad: "Usa temperature diverse tra loro, da 0 a 100 °C, e velocità da 30 a 100%.", units: "Unità di temperatura",
@@ -241,7 +243,7 @@ function render() {
   drawCurve();
 
   const lowest = [...S.points].sort((p, q) => p[0] - q[0])[0];
-  $("summary").textContent = a.temperature == null || !S.online ? L.summaryWait : a.duty > 0 ? L.summaryOn(fmtNow(a.temperature), a.duty) : L.summaryOff(fmtNow(a.temperature), fmt(lowest[0]));
+  $("summary").textContent = a.temperature == null || !S.online ? L.summaryWait : a.problem === "no-hardware" ? L.summaryNoCase(fmtNow(a.temperature)) : a.duty > 0 ? L.summaryOn(fmtNow(a.temperature), a.duty) : L.summaryOff(fmtNow(a.temperature), fmt(lowest[0]));
 
   const problem = !S.online ? "offline" : a.problem;
   if (!notified) { $("notice").textContent = problem ? L.p[problem] : ""; $("notice").hidden = !problem; }
