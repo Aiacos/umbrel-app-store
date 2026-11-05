@@ -20,7 +20,7 @@ and only replaces them when you press **Install update**.
 | Service | Network | Host access |
 | --- | --- | --- |
 | `web`: the page | Umbrel network, behind the Umbrel login | none, runs as user 1000 |
-| `daemon`: fan and button | none | `/dev/i2c-1`, `/dev/gpiochip0`, the D-Bus system socket and `/usr/lib/systemd/system-shutdown` |
+| `daemon`: fan and button | none | I2C and GPIO devices, the D-Bus system socket and `/usr/lib/systemd/system-shutdown` |
 
 The daemon uses D-Bus to reboot or shut down when you press the button, and installs a small hook
 in `system-shutdown` so the case cuts power after a shutdown. Access to the system bus as root is

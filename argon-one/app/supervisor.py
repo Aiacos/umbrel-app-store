@@ -13,6 +13,8 @@ sys.path.insert(0, "/app")
 from common import (APPLY_REQUEST, ARGON, BACKUPS, CONFIG, FILES, RESTART_REQUEST, RESULT_FILE, ROLLBACK_REQUEST, RUN,
                     STAGING, STATUS_FILE, now, syntax_error, version_of, write_json)
 
+HOST_DEV = Path("/host-dev")
+DEVICES = ("i2c-1", "gpiochip0")
 HOOK_SOURCE = "/app/shutdown_hook.py"
 HOOK_TARGET = "/host-shutdown/argon-shutdown.py"
 HEALTH_DELAY = 8
@@ -32,9 +34,49 @@ def installed():
     return (ARGON / "argononed.py").exists()
 
 
+def link_devices():
+    # The host's /dev is mounted because a fixed device list stops the container on boards without
+    # them. The container's cgroup rules still allow only I2C and GPIO.
+    for name in DEVICES:
+        target = Path("/dev") / name
+        if (HOST_DEV / name).exists() and not target.is_symlink():
+            target.symlink_to(HOST_DEV / name)
+
+
+def case_present():
+    """The button line floats without the case, so nothing starts unless the case's MCU answers."""
+    import smbus
+
+    link_devices()
+    if not Path("/dev/gpiochip0").exists():
+        return False
+    try:
+        bus = smbus.SMBus(1)
+        try:
+            bus.read_byte_data(0x1a, 0x80)
+        finally:
+            bus.close()
+        return True
+    except OSError:
+        return False
+
+
+def install_hook():
+    global hook_installed
+    if hook_installed:
+        return
+    try:
+        shutil.copyfile(HOOK_SOURCE, HOOK_TARGET)
+        os.chmod(HOOK_TARGET, 0o755)
+        hook_installed = True
+    except OSError as error:
+        print(f"Shutdown hook not installed, the case will not cut power after a shutdown: {error}", flush=True)
+
+
 def start_daemon():
     global child
-    if installed():
+    if installed() and case_present():
+        install_hook()
         child = subprocess.Popen([sys.executable, "-u", "/etc/argon/argononed.py", "SERVICE"], cwd="/")
 
 
@@ -61,6 +103,8 @@ def health():
     import gpiod
     import smbus
 
+    if not case_present():
+        return "no-hardware", None
     if child is None or child.poll() is not None:
         return "daemon", None
     try:
@@ -133,7 +177,9 @@ def clear_staging():
 def checked_restart():
     restart_daemon()
     time.sleep(HEALTH_DELAY)
-    return health()[0]
+    problem = health()[0]
+    # Without the case there is nothing to test the scripts on.
+    return None if problem == "no-hardware" else problem
 
 
 def apply_update():
@@ -204,20 +250,13 @@ def take(request):
 
 
 def main():
-    global hook_installed
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
     for directory in (ARGON, CONFIG, RUN, STAGING, BACKUPS):
         directory.mkdir(parents=True, exist_ok=True)
-    try:
-        shutil.copyfile(HOOK_SOURCE, HOOK_TARGET)
-        os.chmod(HOOK_TARGET, 0o755)
-        hook_installed = True
-    except OSError as error:
-        print(f"Shutdown hook not installed, the case will not cut power after a shutdown: {error}", flush=True)
-
     start_daemon()
-    last_status = last_start = 0
+    last_status = 0
+    last_start = time.time()
     while running:
         if take(APPLY_REQUEST):
             apply_update()
@@ -228,7 +267,7 @@ def main():
         if take(RESTART_REQUEST):
             restart_daemon()
             last_status = 0
-        if installed() and (child is None or child.poll() is not None) and time.time() - last_start > 5:
+        if installed() and (child is None or child.poll() is not None) and time.time() - last_start > 15:
             last_start = time.time()
             start_daemon()
         if time.time() - last_status >= 10:
