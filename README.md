@@ -29,3 +29,16 @@ effectively broad access to the host: install this app only if you accept that.
 From a terminal, `sudo docker exec -it aiacos-argon-one_daemon_1 argon-config` opens Argon's own
 menu. IR, UPS and BLSTR DAC are left out: they need packages and boot settings that umbrelOS does
 not keep.
+
+## Foundry VTT
+
+[Foundry Virtual Tabletop](https://foundryvtt.com) with a LiveKit server for audio and video. It is
+the same package as the one proposed to the official Umbrel App Store
+([getumbrel/umbrel-apps#6170](https://github.com/getumbrel/umbrel-apps/pull/6170)), published here
+so it gets updates before that is merged. A workflow checks
+[felddy/foundryvtt-docker](https://github.com/felddy/foundryvtt-docker) every day and bumps the app
+to each new release.
+
+Foundry is commercial software: you need a license from foundryvtt.com. After installing, enter your
+foundryvtt.com username and password and choose an admin password in the app's settings in
+umbrelOS; Foundry is downloaded from your account on the next start.

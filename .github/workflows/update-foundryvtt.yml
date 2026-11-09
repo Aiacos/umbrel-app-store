@@ -1,0 +1,65 @@
+name: Update Foundry VTT
+
+# Checks felddy/foundryvtt-docker every day and bumps aiacos-foundryvtt to its
+# latest stable release, so umbrelOS offers the update to installed apps.
+
+on:
+  schedule:
+    - cron: "41 5 * * *"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "felddy release to package, such as 14.370.0 (default: latest)"
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-foundryvtt
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Bump the package
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          app=aiacos-foundryvtt
+          image=felddy/foundryvtt
+
+          release="${VERSION:-$(gh release view --repo felddy/foundryvtt-docker --json tagName --jq .tagName)}"
+          tag="${release#v}"            # 14.370.0
+          foundry="${tag%.*}"           # 14.370
+          [[ "${tag}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Unexpected release tag: ${release}" >&2; exit 1; }
+
+          current="$(sed -n "s|.*image: ${image}:\([0-9.]*\)@sha256:.*|\1|p" "${app}/docker-compose.yml" | head -n 1)"
+          echo "Packaged: ${current}, latest: ${tag}"
+          if [[ "$(printf '%s\n%s\n' "${current}" "${tag}" | sort -V | tail -n 1)" == "${current}" ]]; then
+            echo "Already up to date."
+            exit 0
+          fi
+
+          raw="$(docker buildx imagetools inspect --raw "${image}:${tag}")"
+          for arch in amd64 arm64; do
+            jq -e --arg a "${arch}" '[.manifests[]?.platform | select(.os == "linux" and .architecture == $a)] | length > 0' <<<"${raw}" >/dev/null \
+              || { echo "${image}:${tag} has no linux/${arch} image" >&2; exit 1; }
+          done
+          digest="$(docker buildx imagetools inspect "${image}:${tag}" --format '{{json .Manifest}}' | jq -r .digest)"
+          [[ "${digest}" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "Could not read the index digest" >&2; exit 1; }
+
+          sed -i -E "s|(image: ${image}:)[0-9.]+@sha256:[0-9a-f]+|\1${tag}@${digest}|" "${app}/docker-compose.yml"
+          sed -i -E "s|^version: \".*\"$|version: \"${foundry}\"|" "${app}/umbrel-app.yml"
+          notes="Foundry Virtual Tabletop ${foundry}. Foundry is downloaded again from your foundryvtt.com account on start, so keep FOUNDRY_USERNAME and FOUNDRY_PASSWORD set. Full release notes: https://foundryvtt.com/releases/${foundry}"
+          sed -i -E "s|^releaseNotes: .*$|releaseNotes: \"${notes}\"|" "${app}/umbrel-app.yml"
+          git --no-pager diff
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Update Foundry VTT to ${foundry}"
+          git push
